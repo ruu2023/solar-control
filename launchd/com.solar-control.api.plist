@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.solar-control.api</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>/Volumes/docker-storage/docker-apps/app/solar-control/.venv/bin/python3</string>
+		<string>-m</string>
+		<string>solar_control</string>
+		<string>serve</string>
+	</array>
+
+	<key>WorkingDirectory</key>
+	<string>/Volumes/docker-storage/docker-apps/app/solar-control</string>
+
+	<key>RunAtLoad</key>
+	<true/>
+
+	<key>KeepAlive</key>
+	<true/>
+
+	<key>StandardOutPath</key>
+	<string>/Volumes/docker-storage/docker-apps/app/solar-control/launchd/solar-control.out.log</string>
+
+	<key>StandardErrorPath</key>
+	<string>/Volumes/docker-storage/docker-apps/app/solar-control/launchd/solar-control.err.log</string>
+</dict>
+</plist>
