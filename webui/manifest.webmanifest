@@ -1,0 +1,15 @@
+{
+  "name": "ソーラー管理",
+  "short_name": "ソーラー",
+  "description": "Renogy Rover + EcoFlow の監視と負荷制御",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "ja",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

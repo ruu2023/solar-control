@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>SolarControl</string>
+  <key>CFBundleDisplayName</key><string>SolarControl</string>
+  <key>CFBundleIdentifier</key><string>com.solar-control.agent</string>
+  <key>CFBundleVersion</key><string>1.0</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleExecutable</key><string>SolarControl</string>
+  <key>LSBackgroundOnly</key><true/>
+  <key>NSBluetoothAlwaysUsageDescription</key>
+  <string>SolarControl reads and controls the Renogy Rover charge controller over its BT-1 Bluetooth module.</string>
+  <key>NSBluetoothPeripheralUsageDescription</key>
+  <string>SolarControl reads and controls the Renogy Rover charge controller over its BT-1 Bluetooth module.</string>
+</dict>
+</plist>

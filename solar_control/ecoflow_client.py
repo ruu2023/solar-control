@@ -43,11 +43,21 @@ def _stringify(value: Any) -> str:
 def parse_status(quota: dict) -> dict:
     """Pull the handful of fields we care about out of a `device/quota/all` response."""
     data = quota.get("data", quota)
+
+    def pick(*keys):
+        for k in keys:
+            v = data.get(k)
+            if v is not None:
+                return v
+        return None
+
     return {
-        "battery_percent": data.get("bms_bmsStatus.f32ShowSoc"),
-        "input_watts": data.get("bms_bmsStatus.inputWatts"),
-        "output_watts": data.get("bms_bmsStatus.outputWatts"),
-        "temperature": data.get("bms_bmsStatus.temp"),
+        # device-level totals -> match what the EcoFlow app shows as 入力/出力
+        "battery_percent": pick("bms_bmsStatus.f32ShowSoc", "bms_emsStatus.f32LcdShowSoc", "pd.soc"),
+        "input_watts": pick("pd.wattsInSum", "bms_bmsStatus.inputWatts"),
+        "output_watts": pick("pd.wattsOutSum", "bms_bmsStatus.outputWatts"),
+        "solar_input_watts": pick("mppt.inWatts"),
+        "temperature": pick("bms_bmsStatus.temp", "inv.outTemp"),
     }
 
 

@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<title>ソーラー管理</title>
+<style>
+  :root {
+    --bg: #f1f5f9; --card: #ffffff; --ink: #1e293b; --muted: #64748b;
+    --line: #e2e8f0; --accent: #2563eb; --good: #16a34a; --warn: #d97706;
+    --danger: #b91c1c; --shadow: 0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a; --card: #1e293b; --ink: #e2e8f0; --muted: #94a3b8;
+      --line: #334155; --accent: #3b82f6; --good: #22c55e; --warn: #f59e0b;
+      --danger: #ef4444; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 440px; margin: 0 auto; padding: 16px 16px 40px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin: 8px 2px 18px; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 700; }
+  .conn { font-size: 12px; padding: 3px 9px; border-radius: 999px; font-weight: 600; }
+  .conn.ok { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+  .conn.bad { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+  .conn.wait { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .card h2 { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; font-weight: 700; }
+  .hero { display: flex; align-items: baseline; gap: 8px; }
+  .hero .big { font-size: 40px; font-weight: 800; letter-spacing: -.02em; }
+  .hero .unit { font-size: 18px; color: var(--muted); font-weight: 600; }
+  .bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 12px 0 4px; }
+  .bar > i { display: block; height: 100%; background: var(--good); transition: width .4s ease; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; margin-top: 14px; }
+  .grid .k { font-size: 11px; color: var(--muted); display: block; }
+  .grid .v { font-size: 16px; font-weight: 700; }
+  .load-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .load-state { font-size: 20px; font-weight: 800; }
+  .load-state.on { color: var(--good); }
+  .load-state.off { color: var(--muted); }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  button {
+    font: inherit; font-weight: 700; border: 0; border-radius: 14px; padding: 14px 10px;
+    color: #fff; cursor: pointer; transition: transform .08s ease, opacity .2s;
+  }
+  button:active { transform: scale(.96); }
+  button:disabled { opacity: .45; cursor: default; }
+  .b-on { background: var(--accent); }
+  .b-off { background: #475569; }
+  footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 18px; }
+  .err { color: var(--danger); font-size: 13px; margin: 6px 2px 0; min-height: 18px; }
+  .spin { animation: sp 1s linear infinite; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  .switch { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .switch input { width: 38px; height: 22px; }
+  .banner { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn);
+    border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .banner button { background: var(--warn); color: #fff; border: 0; border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
+  .rule { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .rule:first-child { border-top: 0; }
+  .rule input[type=checkbox] { width: 18px; height: 18px; flex: none; }
+  .rule .body { flex: 1; min-width: 0; }
+  .rule .name { font-weight: 700; }
+  .rule .cond { color: var(--muted); }
+  .rule .act { font-weight: 800; }
+  .rule .act.on { color: var(--good); }
+  .rule .act.off { color: var(--muted); }
+  .rule .del { background: none; border: 0; color: var(--danger); font-size: 16px; padding: 2px 6px; cursor: pointer; }
+  .rules-empty { color: var(--muted); font-size: 13px; padding: 6px 0; }
+  .addrule { margin: 10px 0 4px; }
+  .addrule summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--accent); }
+  .addrule-body { padding: 12px 0 4px; display: flex; flex-direction: column; gap: 8px; }
+  .addrule-row { display: flex; gap: 8px; align-items: center; }
+  .addrule input, .addrule select { font: inherit; padding: 8px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--ink); min-width: 0; }
+  .addrule input#r-name { width: 100%; }
+  .addrule-row select, .addrule-row input { flex: 1; }
+  .events { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .events .ev { font-size: 12px; color: var(--muted); padding: 3px 0; }
+  .events .ev b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ソーラー管理</h1>
+    <span id="conn" class="conn wait">接続確認中…</span>
+  </header>
+
+  <div class="card">
+    <h2>ソーラー系 (Rover)</h2>
+    <div class="hero">
+      <span id="s-soc" class="big">--</span><span class="unit">%</span>
+    </div>
+    <div class="bar"><i id="s-bar" style="width:0%"></i></div>
+    <div class="grid">
+      <div><span class="k">バッテリー電圧</span><span id="s-volt" class="v">-- V</span></div>
+      <div><span class="k">充電状態</span><span id="s-charge" class="v">--</span></div>
+      <div><span class="k">PV 発電</span><span id="s-pv" class="v">-- W</span></div>
+      <div><span class="k">負荷電力</span><span id="s-load" class="v">-- W</span></div>
+      <div><span class="k">本日発電</span><span id="s-gen" class="v">-- Wh</span></div>
+      <div><span class="k">コントローラ温度</span><span id="s-temp" class="v">-- ℃</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>家庭用バッテリー (EcoFlow)</h2>
+    <div class="hero">
+      <span id="h-soc" class="big">--</span><span class="unit">%</span>
+    </div>
+    <div class="bar"><i id="h-bar" style="width:0%"></i></div>
+    <div class="grid">
+      <div><span class="k">入力（合計）</span><span id="h-in" class="v">-- W</span></div>
+      <div><span class="k">出力（合計）</span><span id="h-out" class="v">-- W</span></div>
+      <div><span class="k">ソーラー入力</span><span id="h-solar" class="v">-- W</span></div>
+      <div><span class="k">温度</span><span id="h-temp" class="v">-- ℃</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>負荷出力（DC ロード端子）</h2>
+    <div class="load-row">
+      <span id="l-state" class="load-state off">● UNKNOWN</span>
+    </div>
+    <div class="btns">
+      <button id="b-on" class="b-on" disabled>出力 ON</button>
+      <button id="b-off" class="b-off" disabled>出力 OFF</button>
+    </div>
+    <div id="err" class="err"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="margin:0">自動制御</h2>
+      <label class="switch">
+        <input type="checkbox" id="auto-enabled" />
+        <span id="auto-enabled-lbl">無効</span>
+      </label>
+    </div>
+    <div id="auto-override" class="banner" hidden></div>
+
+    <div id="rules"></div>
+
+    <details class="addrule">
+      <summary>＋ ルールを追加</summary>
+      <div class="addrule-body">
+        <input id="r-name" type="text" placeholder="名前（任意）" />
+        <div class="addrule-row">
+          <select id="r-metric"></select>
+          <select id="r-op"></select>
+          <input id="r-threshold" type="number" step="any" placeholder="値" />
+        </div>
+        <div class="addrule-row">
+          <span class="k">→ 動作</span>
+          <select id="r-action">
+            <option value="on">負荷 ON</option>
+            <option value="off">負荷 OFF</option>
+          </select>
+          <button id="r-add" class="b-on" style="padding:8px 14px">追加</button>
+        </div>
+        <div class="k" id="r-hint" style="margin-top:6px"></div>
+      </div>
+    </details>
+
+    <div id="events" class="events"></div>
+    <div id="auto-err" class="err"></div>
+  </div>
+
+  <footer>
+    <span id="updated">--</span> 更新 ·
+    <a href="#" id="refresh" style="color:var(--accent)">今すぐ更新</a>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const API = ""; // same origin as this page (served by the FastAPI app)
+  let busy = false;
+
+  const fmt = (n, d = 0) => (n === null || n === undefined || Number.isNaN(n)) ? "--" : Number(n).toFixed(d);
+
+  function setConn(state, text) {
+    const el = $("conn");
+    el.className = "conn " + state;
+    el.textContent = text;
+  }
+
+  function render(data) {
+    const s = data.solar || {};
+    const h = data.home_battery || {};
+
+    // solar
+    $("s-soc").textContent = fmt(s.battery_percent);
+    $("s-bar").style.width = Math.max(0, Math.min(100, s.battery_percent || 0)) + "%";
+    $("s-volt").textContent = fmt(s.battery_voltage, 1) + " V";
+    $("s-charge").textContent = s.charging_status ?? "--";
+    $("s-pv").textContent = fmt(s.pv_power) + " W";
+    $("s-load").textContent = fmt(s.load_power) + " W";
+    $("s-gen").textContent = fmt(s.power_generation_today) + " Wh";
+    $("s-temp").textContent = fmt(s.controller_temperature) + " ℃";
+
+    // home battery (may be an error object)
+    if (h && h.battery_percent !== undefined) {
+      $("h-soc").textContent = fmt(h.battery_percent, 0);
+      $("h-bar").style.width = Math.max(0, Math.min(100, h.battery_percent || 0)) + "%";
+      $("h-in").textContent = fmt(h.input_watts) + " W";
+      $("h-out").textContent = fmt(h.output_watts) + " W";
+      $("h-solar").textContent = fmt(h.solar_input_watts) + " W";
+      $("h-temp").textContent = fmt(h.temperature) + " ℃";
+    } else {
+      $("h-soc").textContent = "n/a";
+      $("h-bar").style.width = "0%";
+      ["h-in", "h-out", "h-solar", "h-temp"].forEach((k) => ($(k).textContent = "--"));
+    }
+
+    // load
+    const on = s.load_status === "on" || s.load_status === "ON" || s.load_status === 1;
+    const st = $("l-state");
+    st.textContent = "● " + (s.load_status ? String(s.load_status).toUpperCase() : "UNKNOWN");
+    st.className = "load-state " + (on ? "on" : "off");
+    $("b-on").disabled = busy || on;
+    $("b-off").disabled = busy || !on;
+
+    $("updated").textContent = new Date().toLocaleTimeString("ja-JP");
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch(API + "/status", { cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json();
+      setConn("ok", "接続中");
+      $("err").textContent = "";
+      render(data);
+    } catch (e) {
+      setConn("bad", "オフライン");
+      $("err").textContent = "取得に失敗: " + e.message;
+    }
+  }
+
+  async function setLoad(on) {
+    if (busy) return;
+    if (!confirm(`負荷出力を ${on ? "ON" : "OFF"} にします。よろしいですか？`)) return;
+    busy = true;
+    $("b-on").disabled = $("b-off").disabled = true;
+    setConn("wait", "送信中…");
+    try {
+      const r = await fetch(API + "/load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ on }),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      $("err").textContent = "";
+    } catch (e) {
+      $("err").textContent = "制御に失敗: " + e.message;
+    } finally {
+      busy = false;
+      await poll();
+    }
+  }
+
+  $("b-on").addEventListener("click", () => setLoad(true));
+  $("b-off").addEventListener("click", () => setLoad(false));
+  $("refresh").addEventListener("click", (e) => { e.preventDefault(); poll(); });
+
+  // ---- 自動制御 -----------------------------------------------------------
+  const METRICS = {
+    battery_percent: "バッテリー残量 %",
+    battery_voltage: "バッテリー電圧 V",
+    pv_power: "PV発電 W",
+    load_power: "負荷電力 W",
+    home_battery_percent: "EcoFlow残量 %",
+    hour: "時刻（時 0-23）",
+  };
+  const OPS = { gte: "≥", lte: "≤", gt: ">", lt: "<", eq: "=", ne: "≠" };
+  let autoBusy = false;
+
+  function initRuleForm() {
+    const m = $("r-metric"), o = $("r-op");
+    if (m.options.length) return;
+    for (const [k, v] of Object.entries(METRICS)) m.add(new Option(v, k));
+    for (const [k, v] of Object.entries(OPS)) o.add(new Option(v, k));
+  }
+
+  async function apiJSON(path, opts) {
+    const r = await fetch(API + path, { cache: "no-store", ...opts });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.status === 204 ? null : r.json();
+  }
+
+  async function pollAuto() {
+    try {
+      const [auto, rules, events] = await Promise.all([
+        apiJSON("/automation"), apiJSON("/rules"), apiJSON("/events?limit=8"),
+      ]);
+      $("auto-err").textContent = "";
+      renderAuto(auto, rules, events);
+    } catch (e) {
+      $("auto-err").textContent = "自動制御の取得に失敗: " + e.message;
+    }
+  }
+
+  function renderAuto(auto, rules, events) {
+    if (!autoBusy) {
+      $("auto-enabled").checked = !!auto.enabled;
+      $("auto-enabled-lbl").textContent = auto.enabled ? "有効" : "無効";
+    }
+    const ob = $("auto-override");
+    if (auto.override_active) {
+      ob.hidden = false;
+      const until = auto.override_until ? new Date(auto.override_until).toLocaleTimeString("ja-JP") : "";
+      ob.innerHTML = `手動優先中（${until} まで自動停止）<button id="ob-resume">今すぐ再開</button>`;
+      $("ob-resume").onclick = async () => {
+        try { await apiJSON("/automation/resume", { method: "POST" }); pollAuto(); }
+        catch (e) { $("auto-err").textContent = e.message; }
+      };
+    } else {
+      ob.hidden = true;
+    }
+
+    const box = $("rules");
+    box.innerHTML = "";
+    if (!rules.length) {
+      box.innerHTML = '<div class="rules-empty">ルール未設定。下の「＋ ルールを追加」から作成します。</div>';
+    }
+    for (const r of rules) {
+      const el = document.createElement("div");
+      el.className = "rule";
+      let cond = `${METRICS[r.metric] || r.metric} ${OPS[r.op] || r.op} ${r.threshold}`;
+      if (r.metric2) cond += ` かつ ${METRICS[r.metric2] || r.metric2} ${OPS[r.op2] || r.op2} ${r.threshold2}`;
+      el.innerHTML = `
+        <input type="checkbox" ${r.enabled ? "checked" : ""} title="有効/無効" />
+        <div class="body">
+          <span class="name">${r.name ? escapeHtml(r.name) + " — " : ""}</span><span class="cond">${cond}</span>
+          <span class="act ${r.action}"> → ${r.action === "on" ? "ON" : "OFF"}</span>
+        </div>
+        <button class="del" title="削除">✕</button>`;
+      el.querySelector("input").onchange = async (e) => {
+        try { await apiJSON("/rules/" + r.id, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: e.target.checked }) }); }
+        catch (err) { $("auto-err").textContent = err.message; pollAuto(); }
+      };
+      el.querySelector(".del").onclick = async () => {
+        if (!confirm("このルールを削除しますか？")) return;
+        try { await apiJSON("/rules/" + r.id, { method: "DELETE" }); pollAuto(); }
+        catch (err) { $("auto-err").textContent = err.message; }
+      };
+      box.appendChild(el);
+    }
+
+    const ev = $("events");
+    ev.innerHTML = "";
+    for (const e of events) {
+      const t = new Date(e.ts).toLocaleTimeString("ja-JP");
+      const d = document.createElement("div");
+      d.className = "ev";
+      d.innerHTML = `${t} <b>${e.action.toUpperCase()}</b> ← ${escapeHtml(e.source)}${e.detail ? " (" + escapeHtml(e.detail) + ")" : ""}${e.ok ? "" : " ⚠失敗"}`;
+      ev.appendChild(d);
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  $("auto-enabled").addEventListener("change", async (e) => {
+    autoBusy = true;
+    $("auto-enabled-lbl").textContent = e.target.checked ? "有効" : "無効";
+    try {
+      await apiJSON("/automation", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: e.target.checked }) });
+    } catch (err) {
+      $("auto-err").textContent = "切替に失敗: " + err.message;
+    } finally {
+      autoBusy = false;
+      pollAuto();
+    }
+  });
+
+  function updateHint() {
+    const m = $("r-metric").value, o = $("r-op").value, t = $("r-threshold").value || "?", a = $("r-action").value;
+    $("r-hint").textContent = `例: ${METRICS[m]} が ${OPS[o]} ${t} のとき 負荷を ${a === "on" ? "ON" : "OFF"} にする`;
+  }
+  ["r-metric", "r-op", "r-threshold", "r-action"].forEach((id) => $(id).addEventListener("input", updateHint));
+
+  $("r-add").addEventListener("click", async () => {
+    const body = {
+      name: $("r-name").value.trim(),
+      metric: $("r-metric").value,
+      op: $("r-op").value,
+      threshold: parseFloat($("r-threshold").value),
+      action: $("r-action").value,
+    };
+    if (Number.isNaN(body.threshold)) { $("auto-err").textContent = "しきい値を入力してください"; return; }
+    try {
+      await apiJSON("/rules", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      $("r-name").value = ""; $("r-threshold").value = "";
+      pollAuto();
+    } catch (e) {
+      $("auto-err").textContent = "ルール追加に失敗: " + e.message;
+    }
+  });
+
+  initRuleForm();
+  updateHint();
+
+  // ---- live updates via SSE (no polling) --------------------------------
+  let es = null;
+  let esRetry = 0;
+  function connectStream() {
+    if (es) es.close();
+    es = new EventSource(API + "/stream");
+    es.addEventListener("status", (e) => {
+      esRetry = 0;
+      setConn("ok", "接続中");
+      $("err").textContent = "";
+      try { render(JSON.parse(e.data)); } catch (_) {}
+    });
+    es.addEventListener("meta", (e) => {
+      try {
+        const m = JSON.parse(e.data);
+        if (m && m.automation) renderAuto(m.automation, m.rules || [], m.events || []);
+      } catch (_) {}
+    });
+    es.onopen = () => { esRetry = 0; setConn("ok", "接続中"); };
+    es.onerror = () => {
+      setConn("wait", "再接続中…");
+      // EventSource retries on its own; add a bounded manual fallback too.
+      es.close();
+      esRetry = Math.min(esRetry + 1, 6);
+      setTimeout(connectStream, 1000 * esRetry);
+    };
+  }
+
+  // instant first paint, then hand over to the stream
+  poll();
+  pollAuto();
+  connectStream();
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 """High-level client for reading status from / controlling a Renogy Rover."""
 from __future__ import annotations
 
+import asyncio
+
 import logging
 
 from . import protocol
@@ -48,11 +50,23 @@ class RoverClient:
         return self._parse_charging_info(response)
 
     async def set_load(self, on: bool) -> dict:
+        """Switch the DC load output. The BT-1 write is fire-and-forget and its
+        ack notification is unreliable (often truncated), so a missing/short ack
+        is not treated as a failure -- callers should confirm via get_status().
+        Genuine transport errors (e.g. disconnected) still propagate."""
+        if not self._transport.is_connected:
+            raise RuntimeError("Not connected to the BT module")
         frame = protocol.build_write_request(protocol.REG_LOAD_CONTROL, 1 if on else 0, self.device_id)
-        response = await self._transport.request(frame)
-        response = protocol.validate_response(response, protocol.FUNCTION_WRITE)
-        # Write-ack layout: [id][func][reg_hi][reg_lo][value_hi][value_lo][crc_lo][crc_hi]
-        return {"load_status": "on" if response[5] == 1 else "off"}
+        acked: bool | None = None
+        try:
+            response = await self._transport.request(frame)
+            response = protocol.validate_response(response, protocol.FUNCTION_WRITE)
+            # Write-ack layout: [id][func][reg_hi][reg_lo][value_hi][value_lo][crc_lo][crc_hi]
+            if len(response) > 5:
+                acked = response[5] == 1
+        except (asyncio.TimeoutError, TimeoutError, IndexError, ValueError):
+            pass
+        return {"load_status": "on" if (acked if acked is not None else on) else "off"}
 
     def _parse_charging_info(self, data: bytes) -> dict:
         def temp(offset: int) -> float:

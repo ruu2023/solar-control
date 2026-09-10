@@ -4,3 +4,6 @@ __pycache__/
 .env
 .pytest_cache/
 launchd/*.log
+solar_control.db
+*.bak.*
+SolarControl.app/Contents/_CodeSignature/
